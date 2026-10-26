@@ -38,7 +38,7 @@ public class Player : MonoBehaviour
     {
         if (Time.timeScale == 1)
         {
-            //isGrounded = Physics2D.OverlapPoint(new Vector2(transform.position.x, transform.position.y + (LongLine * -1)), ground); // Verifica si el objeto está tocando el suelo
+            isGrounded = Physics2D.OverlapPoint(new Vector2(transform.position.x, transform.position.y + (LongLine * -1)), ground); // Verifica si el objeto está tocando el suelo
             //if (isGrounded)
             //{
             //    lastGroundPosition = transform.position;
@@ -50,46 +50,34 @@ public class Player : MonoBehaviour
             //}
 
             //animator.SetBool("Idle", true);
+            isWalking = false;
 
-            if (Input.GetKeyDown(KeyCode.Space) /*&& isGrounded*/)
+            if (Input.GetKeyDown(KeyCode.Space) && isGrounded)
             {
                 rb.AddForce(new Vector2(0, 8/*settingsPlayer.JumpForce*/), ForceMode2D.Impulse);
-                animator.SetBool("Jump", true);
-                animator.SetBool("Idle", false);
-                animator.SetBool("Walk", false);
                 //AudioManager.Instance.PlayerJump();
             }
-
             if (Input.GetKey(KeyCode.A)) // Si la tecla A está presionada el objeto se mueve hacia la izquierda
             {
                 rb.linearVelocity = new Vector2(-5f/*-settingsPlayer.Speed*/, rb.linearVelocity.y);
                 transform.right = Vector2.left;
-                //isWalking = isGrounded;
-                animator.SetBool("Jump", false);
-                animator.SetBool("Idle", false);
-                animator.SetBool("Walk", true);
+                isWalking = true;
 
             }
-            if (Input.GetKey(KeyCode.D)) // Si la tecla D está presionada el objeto se mueve hacia la derecha
+            else if (Input.GetKey(KeyCode.D)) // Si la tecla D está presionada el objeto se mueve hacia la derecha
             {
                 rb.linearVelocity = new Vector2(5f/*settingsPlayer.Speed*/, rb.linearVelocity.y);
                 transform.right = Vector2.right;
-                //isWalking = isGrounded;
-                animator.SetBool("Jump", false);
-                animator.SetBool("Idle", false);
-                animator.SetBool("Walk", true);
+                isWalking = true;
             }
-
-
-            if (!Input.GetKey(KeyCode.A) && !Input.GetKey(KeyCode.D))
+            else 
             {
                 rb.linearVelocity = new Vector2(0, rb.linearVelocity.y);
-                isWalking = false;
-                animator.SetBool("Jump", false);
-                animator.SetBool("Idle", true);
-                animator.SetBool("Walk", false);
+                
             }
-
+            animator.SetBool("Jump", !isGrounded);
+            animator.SetBool("Idle", isGrounded && !isWalking);
+            animator.SetBool("Walk", isGrounded && isWalking);
             //if (Input.GetMouseButtonDown(0))
             //{
             //    Bullet bullet = Instantiate(bulletPrefab, Gun.position, Quaternion.identity);
@@ -99,9 +87,12 @@ public class Player : MonoBehaviour
         }
     }
 
+
+
+
     //private void Damage(Collider2D collision)
     //{
-        
+
     //    life -= collision.GetComponent<BulletEnemy>().Damage;
     //    AudioManager.Instance.PlayerDamege();
     //    image.fillAmount = life / settingsPlayer.Life;
@@ -176,10 +167,10 @@ public class Player : MonoBehaviour
     //    UIWinner.Instance.ScoreWinner();
     //}
 
-    //private void OnDrawGizmosSelected()
-    //{
-    //    Gizmos.color = Color.red;
-    //    Vector2 point = new Vector2(transform.position.x, transform.position.y - LongLine);
-    //    Gizmos.DrawWireSphere(point, 0.05f);
-    //}
+    private void OnDrawGizmosSelected()
+    {
+        Gizmos.color = Color.red;
+        Vector2 point = new Vector2(transform.position.x, transform.position.y - LongLine);
+        Gizmos.DrawWireSphere(point, 0.05f);
+    }
 }
