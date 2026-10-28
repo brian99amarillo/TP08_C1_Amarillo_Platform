@@ -4,21 +4,21 @@ using UnityEngine.UI;
 
 public class Player : MonoBehaviour
 {
-    //[SerializeField] private Bullet bulletPrefab;
-    [SerializeField] private Transform Gun;
+ 
     [SerializeField] private Animator animator;
     [SerializeField] private LayerMask ground;
-    //[SerializeField] private SettingsPlayerSO settingsPlayer;
-    [SerializeField] private GameObject CanvasGameOver;
-    [SerializeField] private GameObject CanvasWinner;
+    [SerializeField] private SettingsPlayerSO settingsPlayer;
     [SerializeField] private Image image;
-    [SerializeField] private float fallLimitY = -2f;
-    private Vector2 lastGroundPosition;
+    [SerializeField] private GameObject playerAttack;
     private Rigidbody2D rb;
-    private float life;
     [SerializeField] private float LongLine = 1f;
-    private bool isWalking = false;
-    private bool isGrounded = false;
+    private bool isWalking;
+    private bool isGrounded;
+    private bool isAttacking;
+    private float attackTimer;
+    private bool hasHit;
+    [SerializeField] private float attackDuration = 0.4f;
+    private float currentDamage;
     private Vector2 starPos;
 
     private void Awake()
@@ -28,66 +28,115 @@ public class Player : MonoBehaviour
 
     private void Start()
     {
-    //    life = settingsPlayer.Life;
-          animator.SetBool("Idle", true);
-    //    starPos = settingsPlayer.StartPosition;
-    //    transform.position = starPos;
-    //    lastGroundPosition = starPos;
+        
+        starPos = settingsPlayer.StartPosition;
+        transform.position = starPos;
+        currentDamage = settingsPlayer.Damage;
     }
     private void Update()
     {
         if (Time.timeScale == 1)
         {
             isGrounded = Physics2D.OverlapPoint(new Vector2(transform.position.x, transform.position.y + (LongLine * -1)), ground); // Verifica si el objeto está tocando el suelo
-            //if (isGrounded)
-            //{
-            //    lastGroundPosition = transform.position;
-            //}
 
-            //if (transform.position.y < fallLimitY)
-            //{
-            //    ReturnToLastGround();
-            //}
-
-            //animator.SetBool("Idle", true);
             isWalking = false;
 
             if (Input.GetKeyDown(KeyCode.Space) && isGrounded)
             {
-                rb.AddForce(new Vector2(0, 8/*settingsPlayer.JumpForce*/), ForceMode2D.Impulse);
-                //AudioManager.Instance.PlayerJump();
+                rb.AddForce(new Vector2(0, settingsPlayer.JumpForce), ForceMode2D.Impulse);
             }
             if (Input.GetKey(KeyCode.A)) // Si la tecla A está presionada el objeto se mueve hacia la izquierda
             {
-                rb.linearVelocity = new Vector2(-5f/*-settingsPlayer.Speed*/, rb.linearVelocity.y);
+                rb.linearVelocity = new Vector2(-settingsPlayer.Speed, rb.linearVelocity.y);
                 transform.right = Vector2.left;
                 isWalking = true;
 
             }
             else if (Input.GetKey(KeyCode.D)) // Si la tecla D está presionada el objeto se mueve hacia la derecha
             {
-                rb.linearVelocity = new Vector2(5f/*settingsPlayer.Speed*/, rb.linearVelocity.y);
+                rb.linearVelocity = new Vector2(settingsPlayer.Speed, rb.linearVelocity.y);
                 transform.right = Vector2.right;
                 isWalking = true;
             }
-            else 
+            else
             {
                 rb.linearVelocity = new Vector2(0, rb.linearVelocity.y);
-                
+
             }
-            animator.SetBool("Jump", !isGrounded);
-            animator.SetBool("Idle", isGrounded && !isWalking);
-            animator.SetBool("Walk", isGrounded && isWalking);
-            //if (Input.GetMouseButtonDown(0))
-            //{
-            //    Bullet bullet = Instantiate(bulletPrefab, Gun.position, Quaternion.identity);
-            //    bullet.Shoot((int)Mathf.Sign(Gun.right.x));
-            //    AudioManager.Instance.PlayerShoot();
-            //}
+            if (Input.GetMouseButtonDown(0) && !isAttacking) // Si se apreta el click izquierdo del mouse avisa que esta atacando
+            {
+                isAttacking = true;
+                hasHit = false;
+                attackTimer = attackDuration;
+                playerAttack.SetActive(true);
+            }
+
+            if (isAttacking)
+            {
+                attackTimer -= Time.deltaTime;
+                if (attackTimer <= 0f)
+                {
+                    isAttacking = false;
+                    playerAttack.SetActive(false);
+                }
+            }
+            UpdateStatus();
+
+            
         }
     }
 
+    //maquina de estados
 
+    public enum PlayerStatus { Idle, Walk, Jump, Attack }
+    private PlayerStatus CurrentStatus;
+    private void ChangePlayerStatus(PlayerStatus NewStatus)
+    {
+        if (NewStatus == CurrentStatus) return;
+        CurrentStatus = NewStatus;
+
+        switch(CurrentStatus)
+        {
+            case PlayerStatus.Idle:
+                animator.Play("Idle");
+                break;
+            case PlayerStatus.Walk:
+                animator.Play("Walk");
+                break;
+            case PlayerStatus.Jump:
+                animator.Play("Jump");
+                break;
+            case PlayerStatus.Attack:
+                animator.Play("Attack");
+                break;
+        }
+    }
+
+    private void UpdateStatus()
+    {
+        if (isAttacking)
+            ChangePlayerStatus(PlayerStatus.Attack);
+        else if (!isGrounded)
+           ChangePlayerStatus(PlayerStatus.Jump);
+        else if (isWalking)
+            ChangePlayerStatus(PlayerStatus.Walk);
+        else
+            ChangePlayerStatus(PlayerStatus.Idle);
+
+    }
+
+    private void OnTriggerStay2D(Collider2D other)
+    {
+        if (!isAttacking || hasHit) return;
+
+        Enemy enemy = other.GetComponent<Enemy>();
+
+        if (enemy != null)
+        {
+            enemy.TakeDamage(currentDamage);
+            hasHit = true; 
+        }
+    }
 
 
     //private void Damage(Collider2D collision)
