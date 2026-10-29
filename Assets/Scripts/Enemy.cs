@@ -1,9 +1,11 @@
 using UnityEngine;
+using UnityEngine.UI;
 
 public class Enemy : MonoBehaviour
 {
 
     [SerializeField] protected SettingsEnemySO settingsEnemy;
+    [SerializeField] private Image barLife;
 
     protected float life;
 
@@ -17,6 +19,7 @@ public class Enemy : MonoBehaviour
     public virtual void TakeDamage(float amount)
     {
         life -= amount;
+        UpdateHealthBar(life, settingsEnemy.MaxLife);
         Debug.Log("Daño recibido");
 
         if (life <= 0f)
@@ -24,7 +27,12 @@ public class Enemy : MonoBehaviour
             Die();
         }
     }
-    
+
+    private void UpdateHealthBar(float currentLife, float maxLife)
+    {
+        barLife.fillAmount = currentLife / maxLife;
+    }
+
     protected virtual void Die()
     {
         Destroy(gameObject);
